@@ -5,3 +5,52 @@
 #TODO Query type to get all users, get user by id, and check token
 #TODO Mutation type to login, register, update user, and delete user
 
+type User {
+  id: ID!
+  user_name: String!
+  email: String!
+}
+
+type TokenMessage {
+  token: String
+  message: String!
+  user: User!
+}
+
+input Credentials {
+  username: String!
+  password: String!
+}
+
+# This is for registering a new user
+input UserInput {
+  user_name: String!
+  email: String!
+  password: String!
+}
+# This is for updating a user
+input userModify {
+  user_name: String
+  email: String
+  password: String
+}
+
+type Query {
+  # Get all users
+  users: [User]
+  # Get user by id
+  user(id: ID!): User
+  # Check token
+  checkToken: TokenMessage
+}
+
+type Mutation {
+  # Login
+  login(credentials: Credentials!): TokenMessage
+  # Register
+  register(user: UserInput!): TokenMessage
+  # Update user
+  updateUser(user: userModify!): User
+  # Delete user
+  deleteUser(id: ID!): User
+}
