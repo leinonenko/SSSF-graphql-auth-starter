@@ -7,6 +7,7 @@ type Animal {
   image: String
   location: Point
   birthdate: DateTime
+  owner: User
 }
 
 input Coordinates {
@@ -27,6 +28,7 @@ type Mutation {
     image: String!
     location: InputPoint!
     birthdate: DateTime!
+    owner: ID!
   ): Animal
   modifyAnimal(
     id: ID!
