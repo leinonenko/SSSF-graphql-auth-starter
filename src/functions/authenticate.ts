@@ -1,15 +1,31 @@
 import {Request} from 'express';
-import LoginMessageResponse from '../interfaces/LoginMessageResponse';
+import jwt from 'jsonwebtoken';
+import {UserIdWithToken} from '../interfaces/User';
 
 export default async (req: Request) => {
-  // check that user is in auth server
-  const response = await fetch(`${process.env.AUTH_URL}/users/token`, {
-    headers: {Authorization: req.headers.authorization as string},
-  });
-  if (!response.ok) {
+  const bearer = req.headers.authorization;
+  if (!bearer) {
     return {};
   }
-  const message = (await response.json()) as LoginMessageResponse;
 
-  return message || {};
+  const token = bearer.split(' ')[1];
+
+  if (!token) {
+    return {};
+  }
+
+  const userFromToken = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    id: string;
+  };
+
+  if (!userFromToken) {
+    return {};
+  }
+
+  const userIdWithToken: UserIdWithToken = {
+    id: userFromToken.id,
+    token,
+  };
+
+  return userIdWithToken;
 };

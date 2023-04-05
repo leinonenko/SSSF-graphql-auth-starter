@@ -3,7 +3,8 @@
 // Mutation: login, register, updateUser, deleteUser
 
 import {GraphQLError} from 'graphql';
-import {User} from '../../interfaces/User';
+import LoginMessageResponse from '../../interfaces/LoginMessageResponse';
+import {User, UserIdWithToken} from '../../interfaces/User';
 
 export default {
   Query: {
@@ -17,7 +18,7 @@ export default {
       const users = await response.json();
       return users;
     },
-    userById: async (_: any, args: {id: string}) => {
+    userById: async (_parent: unknown, args: {id: string}) => {
       const response = await fetch(`${process.env.AUTH_URL}/users/${args.id}`);
       if (!response.ok) {
         throw new GraphQLError(response.statusText, {
@@ -27,10 +28,14 @@ export default {
       const user = await response.json();
       return user;
     },
-    checkToken: async (_parent: unknown, _args: unknown, user: User) => {
+    checkToken: async (
+      _parent: unknown,
+      _args: unknown,
+      user: UserIdWithToken
+    ) => {
       console.log(user);
 
-      const response = await fetch(`${process.env.AUTH_URL}/token`, {
+      const response = await fetch(`${process.env.AUTH_URL}/users/token`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -42,6 +47,80 @@ export default {
       }
       const userFromAuth = await response.json();
       return userFromAuth;
+    },
+  },
+  Mutation: {
+    login: async (
+      _parent: unknown,
+      args: {username: string; password: string}
+    ) => {
+      const response = await fetch(`${process.env.AUTH_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(args),
+      });
+      if (!response.ok) {
+        throw new GraphQLError(response.statusText, {
+          extensions: {code: 'NOT_FOUND'},
+        });
+      }
+      const user = (await response.json()) as LoginMessageResponse;
+      return user;
+    },
+    register: async (_parent: unknown, args: User) => {
+      const response = await fetch(`${process.env.AUTH_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(args),
+      });
+      if (!response.ok) {
+        throw new GraphQLError(response.statusText, {
+          extensions: {code: 'VALIDATION_ERROR'},
+        });
+      }
+      const user = (await response.json()) as LoginMessageResponse;
+      return user;
+    },
+    updateUser: async (_parent: unknown, args: User, user: UserIdWithToken) => {
+      const response = await fetch(`${process.env.AUTH_URL}/users`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${args.token}`,
+        },
+        body: JSON.stringify(args),
+      });
+      if (!response.ok) {
+        throw new GraphQLError(response.statusText, {
+          extensions: {code: 'NOT_FOUND'},
+        });
+      }
+      const userFromPut = (await response.json()) as LoginMessageResponse;
+      return userFromPut;
+    },
+    deleteUser: async (
+      _parent: unknown,
+      _args: unknown,
+      user: UserIdWithToken
+    ) => {
+      const response = await fetch(`${process.env.AUTH_URL}/users`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new GraphQLError(response.statusText, {
+          extensions: {code: 'NOT_FOUND'},
+        });
+      }
+      const userFromDelete = (await response.json()) as LoginMessageResponse;
+      return userFromDelete;
     },
   },
 };
