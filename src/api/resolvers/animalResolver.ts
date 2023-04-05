@@ -2,6 +2,8 @@ import {Animal} from '../../interfaces/Animal';
 import animalModel from '../models/animalModel';
 import rectangleBounds from '../../utils/rectangleBounds';
 import {locationInput} from '../../interfaces/Location';
+import {UserIdWithToken} from '../../interfaces/User';
+import {GraphQLError} from 'graphql';
 
 export default {
   Query: {
@@ -23,17 +25,43 @@ export default {
     },
   },
   Mutation: {
-    addAnimal: async (_parent: undefined, args: Animal) => {
+    addAnimal: async (
+      _parent: undefined,
+      args: Animal,
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
       const animal = new animalModel(args);
       return await animal.save();
     },
-    modifyAnimal: async (_parent: undefined, args: Animal) => {
-      console.log(args);
+    modifyAnimal: async (
+      _parent: undefined,
+      args: Animal,
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
       return await animalModel.findByIdAndUpdate(args.id, args, {
         new: true,
       });
     },
-    deleteAnimal: async (_parent: undefined, args: Animal) => {
+    deleteAnimal: async (
+      _parent: undefined,
+      args: Animal,
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
       return await animalModel.findByIdAndDelete(args.id);
     },
   },
