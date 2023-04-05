@@ -2,6 +2,7 @@ import {GraphQLError} from 'graphql';
 import {Category} from '../../interfaces/Category';
 import {Species} from '../../interfaces/Species';
 import categoryModel from '../models/categoryModel';
+import {UserIdWithToken} from '../../interfaces/User';
 
 export default {
   Species: {
@@ -18,16 +19,44 @@ export default {
     },
   },
   Mutation: {
-    addCategory: async (_parent: undefined, args: Category) => {
+    addCategory: async (
+      _parent: undefined,
+      args: Category,
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
       const category = new categoryModel(args);
       return await category.save();
     },
-    modifyCategory: async (_parent: undefined, args: Category) => {
+    modifyCategory: async (
+      _parent: undefined,
+      args: Category,
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
+
       return await categoryModel.findByIdAndUpdate(args.id, args, {
         new: true,
       });
     },
-    deleteCategory: async (_parent: undefined, args: Category) => {
+    deleteCategory: async (
+      _parent: undefined,
+      args: Category,
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
       return await categoryModel.findByIdAndDelete(args.id);
     },
   },

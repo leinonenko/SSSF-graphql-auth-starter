@@ -3,22 +3,24 @@
 // Mutation: login, register, updateUser, deleteUser
 
 import {GraphQLError} from 'graphql';
-import { Animal } from '../../interfaces/Animal';
-import LoginMessageResponse from '../../interfaces/LoginMessageResponse';
 import {User, UserIdWithToken} from '../../interfaces/User';
+import LoginMessageResponse from '../../interfaces/LoginMessageResponse';
+import {Animal} from '../../interfaces/Animal';
 
 export default {
   Animal: {
     owner: async (parent: Animal) => {
-      const response = await fetch(`${process.env.AUTH_URL}/users/${parent.owner}`);
+      const response = await fetch(
+        `${process.env.AUTH_URL}/users/${parent.owner}`
+      );
       if (!response.ok) {
         throw new GraphQLError(response.statusText, {
           extensions: {code: 'NOT_FOUND'},
         });
       }
-      const user = await response.json() as User[];
+      const user = (await response.json()) as User;
       return user;
-    }
+    },
   },
   Query: {
     users: async () => {
@@ -28,7 +30,7 @@ export default {
           extensions: {code: 'NOT_FOUND'},
         });
       }
-      const users = await response.json();
+      const users = (await response.json()) as User[];
       return users;
     },
     userById: async (_parent: unknown, args: {id: string}) => {
@@ -38,7 +40,7 @@ export default {
           extensions: {code: 'NOT_FOUND'},
         });
       }
-      const user = await response.json() as User[];
+      const user = (await response.json()) as User;
       return user;
     },
     checkToken: async (
@@ -65,14 +67,14 @@ export default {
   Mutation: {
     login: async (
       _parent: unknown,
-      args: {username: string; password: string}
+      args: {credentials: {username: string; password: string}}
     ) => {
       const response = await fetch(`${process.env.AUTH_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(args),
+        body: JSON.stringify(args.credentials),
       });
       if (!response.ok) {
         throw new GraphQLError(response.statusText, {
@@ -82,13 +84,13 @@ export default {
       const user = (await response.json()) as LoginMessageResponse;
       return user;
     },
-    register: async (_parent: unknown, args: User) => {
+    register: async (_parent: unknown, args: {user: User}) => {
       const response = await fetch(`${process.env.AUTH_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(args),
+        body: JSON.stringify(args.user),
       });
       if (!response.ok) {
         throw new GraphQLError(response.statusText, {
@@ -98,14 +100,24 @@ export default {
       const user = (await response.json()) as LoginMessageResponse;
       return user;
     },
-    updateUser: async (_parent: unknown, args: User, user: UserIdWithToken) => {
+    updateUser: async (
+      _parent: unknown,
+      args: {user: User},
+      user: UserIdWithToken
+    ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
+
       const response = await fetch(`${process.env.AUTH_URL}/users`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${args.token}`,
+          Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify(args),
+        body: JSON.stringify(args.user),
       });
       if (!response.ok) {
         throw new GraphQLError(response.statusText, {
@@ -120,6 +132,12 @@ export default {
       _args: unknown,
       user: UserIdWithToken
     ) => {
+      if (!user.token) {
+        throw new GraphQLError('Not authorized', {
+          extensions: {code: 'NOT_AUTHORIZED'},
+        });
+      }
+
       const response = await fetch(`${process.env.AUTH_URL}/users`, {
         method: 'DELETE',
         headers: {
