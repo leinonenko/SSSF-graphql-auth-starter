@@ -1,5 +1,5 @@
 import {Point} from 'geojson';
-import {Document} from 'mongoose';
+import {Document, Types} from 'mongoose';
 import {Species} from './Species';
 
 interface Animal extends Document {

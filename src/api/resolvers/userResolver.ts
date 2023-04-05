@@ -3,10 +3,23 @@
 // Mutation: login, register, updateUser, deleteUser
 
 import {GraphQLError} from 'graphql';
+import { Animal } from '../../interfaces/Animal';
 import LoginMessageResponse from '../../interfaces/LoginMessageResponse';
 import {User, UserIdWithToken} from '../../interfaces/User';
 
 export default {
+  Animal: {
+    owner: async (parent: Animal) => {
+      const response = await fetch(`${process.env.AUTH_URL}/users/${parent.owner}`);
+      if (!response.ok) {
+        throw new GraphQLError(response.statusText, {
+          extensions: {code: 'NOT_FOUND'},
+        });
+      }
+      const user = await response.json() as User[];
+      return user;
+    }
+  },
   Query: {
     users: async () => {
       const response = await fetch(`${process.env.AUTH_URL}/users`);
@@ -25,7 +38,7 @@ export default {
           extensions: {code: 'NOT_FOUND'},
         });
       }
-      const user = await response.json();
+      const user = await response.json() as User[];
       return user;
     },
     checkToken: async (
