@@ -4,6 +4,7 @@ import rectangleBounds from '../../utils/rectangleBounds';
 import {locationInput} from '../../interfaces/Location';
 import {UserIdWithToken} from '../../interfaces/User';
 import {GraphQLError} from 'graphql';
+import {Types} from 'mongoose';
 
 export default {
   Query: {
@@ -35,6 +36,8 @@ export default {
           extensions: {code: 'NOT_AUTHORIZED'},
         });
       }
+      args.owner = user.id as unknown as Types.ObjectId;
+      console.log(args);
       const animal = new animalModel(args);
       return await animal.save();
     },

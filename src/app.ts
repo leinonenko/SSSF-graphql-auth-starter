@@ -13,11 +13,31 @@ import {
 import {notFound, errorHandler} from './middlewares';
 import authenticate from './functions/authenticate';
 import {MyContext} from './interfaces/MyContext';
+import {createRateLimitRule} from 'graphql-rate-limit';
+import {shield} from 'graphql-shield';
+import {applyMiddleware} from 'graphql-middleware';
+import {makeExecutableSchema} from '@graphql-tools/schema';
 
 const app = express();
 
 (async () => {
   try {
+    const rateLimitRule = createRateLimitRule({
+      identifyContext: (ctx) => ctx.id,
+    });
+
+    const permissions = shield({
+      Mutation: {login: rateLimitRule({window: '1s', max: 5})},
+    });
+
+    const schema = applyMiddleware(
+      makeExecutableSchema({
+        typeDefs,
+        resolvers,
+      }),
+      permissions
+    );
+
     app.use(
       helmet({
         crossOriginEmbedderPolicy: false,
@@ -25,8 +45,7 @@ const app = express();
       })
     );
     const server = new ApolloServer<MyContext>({
-      typeDefs,
-      resolvers,
+      schema: schema,
       introspection: true,
       plugins: [
         process.env.NODE_ENV === 'production'
